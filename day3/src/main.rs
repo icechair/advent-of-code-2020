@@ -27,7 +27,7 @@ fn check_slope(left: usize, down: usize, input: &String) -> usize {
                     y += 1;
                     continue;
                 }
-                y = 0;
+                y = 1;
                 let chars = row.chars().collect::<Vec<char>>();
                 if chars[x] == '#' {
                     n_trees += 1;
@@ -45,32 +45,16 @@ fn check_slope(left: usize, down: usize, input: &String) -> usize {
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    let mut n_trees = 0;
+    let mut n_trees = 1;
 
-    n_trees = check_slope(3, 1, &args[1]);
-
-    /*
-    let mut width = 0;
-    let mut x = 0;
-    if let Ok(lines) = read_lines(&args[1]) {
-        for line in lines {
-            if let Ok(row) = line {
-                if width == 0 {
-                    width = row.len();
-                } else {
-                    let chars = row.chars().collect::<Vec<char>>();
-                    if chars[x] == '#' {
-                        n_trees += 1;
-                    }
-                }
-
-                x += 3;
-                if x >= width {
-                    x -= width
-                }
-            }
-        }
+    if &args[2] == "1" {
+        n_trees = check_slope(3, 1, &args[1]);
+    } else if &args[2] == "2" {
+        n_trees *= check_slope(1, 1, &args[1]);
+        n_trees *= check_slope(3, 1, &args[1]);
+        n_trees *= check_slope(5, 1, &args[1]);
+        n_trees *= check_slope(7, 1, &args[1]);
+        n_trees *= check_slope(1, 2, &args[1]);
     }
-    */
     println!("{}", n_trees)
 }
