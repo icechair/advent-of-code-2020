@@ -11,6 +11,68 @@ where
     Ok(io::BufReader::new(file).lines())
 }
 
+fn valid_year(value: &str, min: usize, max: usize) -> bool {
+    if value.len() != 4 {
+        return false;
+    }
+    return match value.parse::<usize>() {
+        Ok(year) => {
+            if year >= min && year <= max {
+                return true;
+            }
+            false
+        }
+        Err(_) => false,
+    };
+}
+
+fn valid_height(value: &str) -> bool {
+    if value.len() == 0 {
+        return false;
+    }
+    let height = match value[0..value.len() - 2].parse::<usize>() {
+        Ok(v) => v,
+        Err(_) => 0,
+    };
+    let unit = &value[value.len() - 2..];
+    return match unit {
+        "cm" => height >= 150 && height <= 193,
+        "in" => height >= 59 && height <= 76,
+        _ => false,
+    };
+}
+
+fn valid_hair_color(value: &str) -> bool {
+    if value.len() != 7 {
+        return false;
+    }
+    if !value.starts_with("#") {
+        return false;
+    }
+    for c in value[1..].chars() {
+        if !"0123456789abcdef".contains(c) {
+            return false;
+        }
+    }
+    return true;
+}
+
+fn valid_eye_color(value: &str) -> bool {
+    return ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"].contains(&value);
+}
+
+fn valid_passport_id(value: &str) -> bool {
+    if value.len() != 9 {
+        return false;
+    }
+    for c in value.chars() {
+        if !"0123456789".contains(c) {
+            return false;
+        }
+    }
+    return true;
+}
+
 #[derive(Hash, Eq, PartialEq, Debug)]
 struct Passport {
     byr: String,
@@ -24,7 +86,7 @@ struct Passport {
 }
 
 impl Passport {
-    fn is_valid(&self) -> bool {
+    fn is_valid_part1(&self) -> bool {
         if self.byr == "" {
             false
         } else if self.iyr == "" {
@@ -42,6 +104,16 @@ impl Passport {
         } else {
             true
         }
+    }
+
+    fn is_valid_part2(&self) -> bool {
+        valid_year(&self.byr, 1920, 2002)
+            && valid_year(&self.iyr, 2010, 2020)
+            && valid_year(&self.eyr, 2020, 2030)
+            && valid_height(&self.hgt)
+            && valid_hair_color(&self.hcl)
+            && valid_eye_color(&self.ecl)
+            && valid_passport_id(&self.pid)
     }
 }
 
@@ -87,8 +159,6 @@ fn main() -> Result<(), io::Error> {
                         passport_line = format!("{} {}", passport_line, row);
                     } else {
                         let passport = parse_passport(&passport_line);
-                        println!("{}", passport_line);
-                        //println!("{:?}", passport);
                         passports.insert(passport);
                         passport_line = String::new();
                     }
@@ -101,18 +171,62 @@ fn main() -> Result<(), io::Error> {
         }
         if passport_line.len() > 0 {
             let passport = parse_passport(&passport_line);
-            println!("{}", passport_line);
-            //println!("{:?}", passport);
             passports.insert(passport);
         }
     }
     let mut n_valid = 0;
-    for p in passports {
-        if p.is_valid() {
-            n_valid += 1;
+    if &args[2] == "1" {
+        for p in passports {
+            if p.is_valid_part1() {
+                n_valid += 1;
+            }
+        }
+    } else if &args[2] == "2" {
+        for p in passports {
+            if p.is_valid_part2() {
+                n_valid += 1;
+            }
         }
     }
     println!("{}", n_valid);
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_valid_year() {
+        assert_eq!(valid_year("2020", 2010, 2020), true);
+        assert_eq!(valid_year("2020", 2010, 2019), false);
+        assert_eq!(valid_year("2000", 2001, 2019), false);
+        assert_eq!(valid_year("", 2001, 2019), false);
+        assert_eq!(valid_year("22222", 2001, 2019), false);
+    }
+
+    #[test]
+    fn test_valid_height() {
+        assert_eq!(valid_height(""), false);
+        assert_eq!(valid_height("60in"), true);
+        assert_eq!(valid_height("190cm"), true);
+        assert_eq!(valid_height("190in"), false);
+        assert_eq!(valid_height("190"), false);
+    }
+
+    #[test]
+    fn test_valid_color() {
+        assert_eq!(valid_hair_color("#123abc"), true);
+        assert_eq!(valid_hair_color("#123abz"), false);
+        assert_eq!(valid_hair_color("123abc"), false);
+
+        assert_eq!(valid_eye_color("brn"), true);
+        assert_eq!(valid_eye_color("wat"), false);
+    }
+
+    #[test]
+    fn test_valid_passport_id() {
+        assert_eq!(valid_passport_id("000000001"), true);
+        assert_eq!(valid_passport_id("01234567890"), false);
+    }
 }
