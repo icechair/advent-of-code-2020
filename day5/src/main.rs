@@ -46,11 +46,13 @@ fn parse_pass(line: &str) -> usize {
 fn main() -> Result<(), io::Error> {
     let args: Vec<String> = env::args().collect();
     let mut max_id = 0;
+    let mut boarding_passes: Vec<usize> = Vec::new();
     if let Ok(lines) = read_lines(&args[1]) {
         for (i, line) in lines.enumerate() {
             match line {
                 Ok(row) => {
                     let id = parse_pass(&row);
+                    boarding_passes.push(id);
                     if id > max_id {
                         max_id = id;
                     }
@@ -62,7 +64,13 @@ fn main() -> Result<(), io::Error> {
             }
         }
     }
+    boarding_passes.sort();
     println!("{}", max_id);
+    for id in 1..boarding_passes.len() - 2 {
+        if boarding_passes[id - 1] + 1 != boarding_passes[id] {
+            println!("{}", boarding_passes[id] - 1);
+        }
+    }
     Ok(())
 }
 
