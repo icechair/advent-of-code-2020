@@ -1,11 +1,8 @@
 use petgraph::algo;
-use petgraph::dot::Dot;
 use petgraph::graph::Graph;
 use petgraph::graph::NodeIndex;
-use petgraph::visit::Dfs;
 use petgraph::visit::IntoNodeReferences;
 use petgraph::Outgoing;
-use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
@@ -83,7 +80,7 @@ fn main() -> Result<(), io::Error> {
     if let Some(start) = start {
         if &args[2] == "1" {
             let mut n_bags = 0;
-            for (id, n) in graph.node_references() {
+            for (id, _) in graph.node_references() {
                 if id != start {
                     if algo::has_path_connecting(&graph, id, start, None) {
                         n_bags += 1;
@@ -111,7 +108,6 @@ fn walk_graph(graph: &Graph<String, usize>, node: NodeIndex) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
     fn test_stuff() {}
