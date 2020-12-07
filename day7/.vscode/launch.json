@@ -15,7 +15,7 @@
           "kind": "bin"
         }
       },
-      "args": ["test.txt", "1"],
+      "args": ["test.txt", "2"],
       "cwd": "${workspaceFolder}"
     },
     {
