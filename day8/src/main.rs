@@ -55,6 +55,11 @@ impl Program {
     pub fn get_acc(&self) -> i32 {
         return self.acc;
     }
+
+    pub fn reset(&mut self) {
+        self.pc = 0;
+        self.acc = 0;
+    }
 }
 
 fn main() -> Result<(), io::Error> {
@@ -62,7 +67,7 @@ fn main() -> Result<(), io::Error> {
     let mut program = Program::new();
 
     let reader = BufReader::new(File::open(&args[1]).expect("File::open failed"));
-    let rom = reader
+    let mut rom = reader
         .lines()
         .map(|row| row.expect("reader.lines failed"))
         .collect::<Vec<String>>();
@@ -72,18 +77,52 @@ fn main() -> Result<(), io::Error> {
         loop {
             let pc = program.step(&rom);
             if history.contains(&pc) {
-                println!("infinite loop at instruction: {}, {}", pc, rom[pc]);
+                eprintln!("infinite loop at instruction: {}, {}", pc, rom[pc]);
                 break;
             }
             history.push(pc);
         }
         println!("{}", program.get_acc());
     } else if &args[2] == "2" {
-        let n_bags = 0;
-        println!("{}", n_bags);
+        let mut cursor = 0;
+        loop {
+            for i in cursor..rom.len() {
+                if rom[i].starts_with("nop") || rom[i].starts_with("jmp") {
+                    cursor = i;
+                    swap_nop_jmp(&mut rom, cursor);
+                    break;
+                }
+            }
+            let mut history = Vec::<usize>::new();
+            loop {
+                let pc = program.step(&rom);
+                if history.contains(&pc) {
+                    eprintln!("infinite loop at instruction: {}, {}", pc, rom[pc]);
+                    break;
+                }
+                history.push(pc);
+                if pc >= rom.len() {
+                    println!("{}", program.get_acc());
+                    return Ok(());
+                }
+            }
+            swap_nop_jmp(&mut rom, cursor);
+            cursor += 1;
+            program.reset();
+        }
     }
 
     Ok(())
+}
+
+fn swap_nop_jmp(rom: &mut Vec<String>, i: usize) {
+    let tmp = String::from(&rom[i]);
+    if tmp.starts_with("nop") {
+        rom[i] = String::from("jmp");
+    } else if tmp.starts_with("jmp") {
+        rom[i] = String::from("nop");
+    }
+    rom[i].push_str(&tmp[3..]);
 }
 
 #[cfg(test)]
