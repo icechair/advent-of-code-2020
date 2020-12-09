@@ -14,15 +14,22 @@ fn main() -> Result<(), io::Error> {
         })
         .collect::<Vec<i64>>();
 
-    if &args[2] == "1" {
-        for i in 25..list.len() {
-            let mut preamble = &list[i - 25..i];
-            if !find_sum(preamble, list[i]) {
-                println!("{}", list[i]);
-                return Ok(());
-            }
+    let mut sum_hit = 0;
+    for i in 25..list.len() {
+        let preamble = &list[i - 25..i];
+        if !find_sum(preamble, list[i]) {
+            sum_hit = list[i];
+            break;
         }
+    }
+    if &args[2] == "1" {
+        println!("{}", sum_hit);
     } else if &args[2] == "2" {
+        let series = find_continuous_sum(&list, sum_hit);
+        if let Some(mut series) = series {
+            series.sort();
+            println!("{}", series[0] + series[series.len() - 1])
+        }
     }
 
     Ok(())
@@ -37,6 +44,26 @@ fn find_sum(list: &[i64], n: i64) -> bool {
         }
     }
     return false;
+}
+
+fn find_continuous_sum(list: &[i64], target: i64) -> Option<Vec<i64>> {
+    let mut series = Vec::<i64>::new();
+    for i in 0..list.len() - 1 {
+        let mut sum = list[i];
+        series.push(list[i]);
+        for j in i + 1..list.len() {
+            if sum + list[j] > target {
+                break;
+            }
+            sum += list[j];
+            series.push(list[j]);
+        }
+        if sum == target {
+            return Some(series);
+        }
+        series.clear();
+    }
+    return None;
 }
 
 #[cfg(test)]
