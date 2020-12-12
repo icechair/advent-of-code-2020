@@ -1,8 +1,6 @@
-use std::collections::VecDeque;
 use std::env;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
-use std::iter::FromIterator;
 
 fn joltage_difference(x: u64, y: u64) -> (u64, u64, u64) {
     let (mut a, mut b, mut c) = (0, 0, 0);
@@ -65,7 +63,7 @@ fn create_adapter_list(list: &[u64]) -> Vec<u64> {
 fn main() -> Result<(), io::Error> {
     let args: Vec<String> = env::args().collect();
     let reader = BufReader::new(File::open(&args[1]).expect("File::open failed"));
-    let mut list = reader
+    let list = reader
         .lines()
         .map(|x| {
             x.expect("reader.lines failed")
@@ -76,7 +74,7 @@ fn main() -> Result<(), io::Error> {
 
     let list = create_adapter_list(&list);
     if &args[2] == "1" {
-        let (a, b, c) = joltage_chain(&list);
+        let (a, _, c) = joltage_chain(&list);
         println!("{:?}", a * c);
     } else if &args[2] == "2" {
         println!("{}", (max_joltage_arragements(&list)));
