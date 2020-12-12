@@ -22,6 +22,7 @@ impl fmt::Display for Cell {
 struct SeatLayout {
     grid: Vec<Cell>,
     width: usize,
+    height: usize,
 }
 
 impl SeatLayout {
@@ -29,6 +30,7 @@ impl SeatLayout {
         let iter = lines.iter();
         let seats = SeatLayout {
             width: lines[0].len(),
+            height: lines.len(),
             grid: iter.fold(Vec::<Cell>::new(), |mut acc, c| {
                 let mut clist = c
                     .chars()
@@ -92,7 +94,7 @@ impl SeatLayout {
         ];
     }
 
-    pub fn step(&mut self) -> usize {
+    pub fn step_part1(&mut self) -> usize {
         let mut next_grid = self.grid.clone();
         for (i, cell) in self.grid.iter().enumerate() {
             if cell == &Cell::Floor {
@@ -123,15 +125,77 @@ impl SeatLayout {
     }
 
     pub fn get_occupied(&self) -> usize {
-        let occupied = self
-            .grid
-            .iter()
-            .map(|c| match c {
-                Cell::Person => 1,
-                _ => 0,
-            })
-            .sum();
+        let occupied = self.grid.iter().fold(0, |acc, c| match c {
+            Cell::Person => acc + 1,
+            _ => acc,
+        });
         return occupied;
+    }
+
+    fn walk_direction(&self, start: usize, direction: (i64, i64)) -> Cell {
+        let width = self.width as i64;
+        let height = self.height as i64;
+        let mut row = self.row(start as i64);
+        let mut col = self.col(start as i64);
+        loop {
+            row += direction.0;
+            col += direction.1;
+            if row < 0 || row >= height || col < 0 || col >= width {
+                break;
+            }
+            let index = self.index(row, col);
+            match self.grid[index as usize] {
+                Cell::Floor => (),
+                x => return x,
+            }
+        }
+        return Cell::Floor;
+    }
+
+    fn directions_kernel(&self, index: usize) -> [Cell; 8] {
+        let out: [Cell; 8] = [
+            self.walk_direction(index, (-1, -1)),
+            self.walk_direction(index, (-1, 0)),
+            self.walk_direction(index, (-1, 1)),
+            self.walk_direction(index, (0, -1)),
+            self.walk_direction(index, (0, 1)),
+            self.walk_direction(index, (1, -1)),
+            self.walk_direction(index, (1, 0)),
+            self.walk_direction(index, (1, 1)),
+        ];
+        return out;
+    }
+
+    pub fn step_part2(&mut self) -> usize {
+        let mut next_grid = self.grid.clone();
+
+        for (i, cell) in self.grid.iter().enumerate() {
+            if cell == &Cell::Floor {
+                continue;
+            }
+            let kernel = self.directions_kernel(i);
+            let mut n_occupied = 0;
+            for k in &kernel {
+                match k {
+                    Cell::Person => n_occupied += 1,
+                    _ => (),
+                }
+            }
+
+            next_grid[i] = match cell {
+                Cell::Person => match n_occupied {
+                    d if d >= 5 => Cell::Chair,
+                    _ => Cell::Person,
+                },
+                Cell::Chair => match n_occupied {
+                    0 => Cell::Person,
+                    _ => Cell::Chair,
+                },
+                x => *x,
+            }
+        }
+        self.grid = next_grid;
+        return self.get_occupied();
     }
 }
 
@@ -144,19 +208,33 @@ fn main() -> Result<(), io::Error> {
         .collect::<Vec<String>>();
 
     let mut seats = SeatLayout::new(list);
-    let mut prev = seats.get_occupied();
-    let mut n = 0;
-    //println!("{}", seats);
-    while n < 1000 {
-        let current = seats.step();
+    if &args[2] == "1" {
+        let mut prev = seats.get_occupied();
+        let mut n = 0;
         //println!("{}", seats);
-        if current == prev {
-            break;
+        while n < 1000 {
+            let current = seats.step_part1();
+            //println!("{}", seats);
+            if current == prev {
+                break;
+            }
+            prev = current;
+            n += 1;
         }
-        prev = current;
-        n += 1;
+        println!("{}", prev);
+    } else if &args[2] == "2" {
+        let mut prev = seats.get_occupied();
+        let mut n = 0;
+        while n < 1000 {
+            let current = seats.step_part2();
+            if current == prev {
+                break;
+            }
+            prev = current;
+            n += 1;
+        }
+        println!("{}", prev);
     }
-    println!("{}", prev);
     Ok(())
 }
 
