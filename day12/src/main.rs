@@ -80,31 +80,22 @@ impl Ship {
 
     pub fn part1(&mut self, line: &str) {
         let (action, amount) = parse_action(line);
-        let modifier = match action {
-            "N" => Some(Point(0, -amount)),
-            "S" => Some(Point(0, amount)),
-            "E" => Some(Point(amount, 0)),
-            "W" => Some(Point(-amount, 0)),
-            "L" => {
-                self.turn(-amount / 90);
-                None
-            }
-            "R" => {
-                self.turn(amount / 90);
-                None
-            }
+        match action {
+            "N" => self.position = self.position.add(Point(0, -amount)),
+            "S" => self.position = self.position.add(Point(0, amount)),
+            "E" => self.position = self.position.add(Point(amount, 0)),
+            "W" => self.position = self.position.add(Point(-amount, 0)),
+            "L" => self.turn(-amount / 90),
+            "R" => self.turn(amount / 90),
             "F" => match DIRECTIONS[self.heading] {
-                NORTH => Some(Point(0, -amount)),
-                SOUTH => Some(Point(0, amount)),
-                EAST => Some(Point(amount, 0)),
-                WEST => Some(Point(-amount, 0)),
+                NORTH => self.position = self.position.add(Point(0, -amount)),
+                SOUTH => self.position = self.position.add(Point(0, amount)),
+                EAST => self.position = self.position.add(Point(amount, 0)),
+                WEST => self.position = self.position.add(Point(-amount, 0)),
                 _ => panic!("Ship.part1 failed: invalid heading: {}", self.heading),
             },
 
             _ => panic!("Ship.part1 failed: line '{}' invalid action", line),
-        };
-        if let Some(modifier) = modifier {
-            self.position = self.position.add(modifier);
         }
     }
 
