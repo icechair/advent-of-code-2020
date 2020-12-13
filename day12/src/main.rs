@@ -13,7 +13,28 @@ const DIRECTIONS: [Point; 4] = [NORTH, EAST, SOUTH, WEST];
 
 impl Point {
     pub fn add(&self, o: Self) -> Self {
-        Point(self.0 + o.0, self.1 + o.1)
+        Self(self.0 + o.0, self.1 + o.1)
+    }
+
+    pub fn mul(&self, scalar: i64) -> Self {
+        Self(self.0 * scalar, self.1 * scalar)
+    }
+
+    pub fn rotate_right(&self, amount: i64) -> Self {
+        let mut p = self.clone();
+        for _ in 0..amount {
+            p = Self(-p.1, p.0);
+        }
+        return p;
+    }
+
+    pub fn rotate_left(&self, amount: i64) -> Self {
+        let mut p = self.clone();
+        for _ in 0..amount {
+            p = Self(p.1, -p.0);
+        }
+
+        return p;
     }
 
     pub fn distance(&self, o: Self) -> i64 {
@@ -23,9 +44,19 @@ impl Point {
     }
 }
 
+fn parse_action(line: &str) -> (&str, i64) {
+    let action = &line[0..1];
+    let amount = line[1..]
+        .parse::<i64>()
+        .expect(&format!("line {} parse failed", &line));
+
+    (action, amount)
+}
+
 struct Ship {
     heading: usize,
     position: Point,
+    waypoint: Point,
 }
 
 impl Ship {
@@ -33,6 +64,7 @@ impl Ship {
         Ship {
             heading: 1,
             position: Point(0, 0),
+            waypoint: Point(10, -1),
         }
     }
 
@@ -45,11 +77,9 @@ impl Ship {
 
         self.heading = heading as usize;
     }
-    pub fn step(&mut self, line: &str) {
-        let action = &line[0..1];
-        let amount = line[1..]
-            .parse::<i64>()
-            .expect(&format!("line {} parse failed", &line));
+
+    pub fn part1(&mut self, line: &str) {
+        let (action, amount) = parse_action(line);
         let modifier = match action {
             "N" => Some(Point(0, -amount)),
             "S" => Some(Point(0, amount)),
@@ -68,13 +98,27 @@ impl Ship {
                 SOUTH => Some(Point(0, amount)),
                 EAST => Some(Point(amount, 0)),
                 WEST => Some(Point(-amount, 0)),
-                _ => panic!("Ship.step failed: invalid heading: {}", self.heading),
+                _ => panic!("Ship.part1 failed: invalid heading: {}", self.heading),
             },
 
-            _ => panic!(format!("Ship.step failed: line '{}' invalid action", line)),
+            _ => panic!("Ship.part1 failed: line '{}' invalid action", line),
         };
         if let Some(modifier) = modifier {
             self.position = self.position.add(modifier);
+        }
+    }
+
+    fn part2(&mut self, line: &str) {
+        let (action, amount) = parse_action(line);
+        match action {
+            "N" => self.waypoint = self.waypoint.add(Point(0, -amount)),
+            "S" => self.waypoint = self.waypoint.add(Point(0, amount)),
+            "E" => self.waypoint = self.waypoint.add(Point(amount, 0)),
+            "W" => self.waypoint = self.waypoint.add(Point(-amount, 0)),
+            "L" => self.waypoint = self.waypoint.rotate_left(amount / 90),
+            "R" => self.waypoint = self.waypoint.rotate_right(amount / 90),
+            "F" => self.position = self.position.add(self.waypoint.mul(amount)),
+            _ => panic!("Ship.part2 failed: invalid action: {}", line),
         }
     }
 }
@@ -83,15 +127,21 @@ fn main() -> Result<(), io::Error> {
     let args: Vec<String> = env::args().collect();
     let reader = BufReader::new(File::open(&args[1]).expect("File::open failed"));
 
+    let mut ship = Ship::new();
     if &args[2] == "1" {
-        let mut ship = Ship::new();
         for line in reader.lines() {
             if let Ok(line) = line {
-                ship.step(&line);
+                ship.part1(&line);
             }
         }
         println!("{}", ship.position.distance(Point(0, 0)))
     } else if &args[2] == "2" {
+        for line in reader.lines() {
+            if let Ok(line) = line {
+                ship.part2(&line);
+            }
+        }
+        println!("{}", ship.position.distance(Point(0, 0)))
     }
 
     Ok(())
@@ -118,15 +168,45 @@ mod tests {
     }
 
     #[test]
-    fn test_ship_step() {
+    fn test_ship_part1() {
         let mut ship = Ship::new();
 
-        ship.step("F10");
-        ship.step("N3");
-        ship.step("F7");
-        ship.step("R90");
-        ship.step("F11");
+        ship.part1("F10");
+        assert_eq!(ship.position, Point(10, 0));
+        ship.part1("N3");
+        assert_eq!(ship.position, Point(10, -3));
+        ship.part1("F7");
+        assert_eq!(ship.position, Point(17, -3));
+        ship.part1("R90");
+        assert_eq!(DIRECTIONS[ship.heading], SOUTH);
+        ship.part1("F11");
         assert_eq!(ship.position, Point(17, 8));
         assert_eq!(ship.position.distance(Point(0, 0)), 25);
+    }
+    #[test]
+    fn test_ship_part2() {
+        let mut ship = Ship::new();
+        assert_eq!(ship.waypoint, Point(10, -1));
+        assert_eq!(ship.position, Point(0, 0));
+
+        ship.part2("F10");
+        assert_eq!(ship.waypoint, Point(10, -1));
+        assert_eq!(ship.position, Point(100, -10));
+
+        ship.part2("N3");
+        assert_eq!(ship.waypoint, Point(10, -4));
+        assert_eq!(ship.position, Point(100, -10));
+
+        ship.part2("F7");
+        assert_eq!(ship.waypoint, Point(10, -4));
+        assert_eq!(ship.position, Point(170, -38));
+
+        ship.part2("R90");
+        assert_eq!(ship.waypoint, Point(4, 10));
+        assert_eq!(ship.position, Point(170, -38));
+
+        ship.part2("F11");
+        assert_eq!(ship.waypoint, Point(4, 10));
+        assert_eq!(ship.position, Point(214, 72));
     }
 }
