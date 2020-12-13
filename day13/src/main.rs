@@ -41,12 +41,37 @@ fn part1(arrival: i64, bus_lines: Vec<&str>) -> i64 {
     return fastest_id * wait_time;
 }
 
+fn part2(bus_lines: Vec<&str>) -> i64 {
+    let len = bus_lines.len() as i64;
+    let mut bus_list = Vec::new();
+    let mut gap_list = Vec::new();
+    for (i, bus) in bus_lines.into_iter().enumerate() {
+        if bus == "x" {
+            continue;
+        }
+        let id = bus
+            .parse::<i64>()
+            .expect(&format!("bus_parse falied: {} NaN", bus));
+        bus_list.push(id);
+        gap_list.push(len - (len + i as i64));
+    }
+    let time: i64 = bus_list.iter().product();
+    println!("{:?}", bus_list);
+    println!("{:?}", gap_list);
+    println!("{:?}", time);
+    return 0;
+}
+
 fn main() -> Result<(), io::Error> {
     let args: Vec<String> = env::args().collect();
     let text = std::fs::read_to_string(&args[1])?;
 
     let (arrival, bus_lines) = parse_bus_notes(&text);
-    println!("{}", part1(arrival, bus_lines));
+    if &args[2] == "1" {
+        println!("{}", part1(arrival, bus_lines));
+    } else if &args[2] == "2" {
+        println!("{}", part2(bus_lines));
+    }
     Ok(())
 }
 
@@ -60,5 +85,41 @@ mod tests {
         let (arrival, bus_lines) = parse_bus_notes(&text);
         assert_eq!(arrival, 939);
         assert_eq!(part1(arrival, bus_lines), 295);
+    }
+    #[test]
+    fn test_part2() {
+        let text = String::from("939\n7,13,x,x,59,x,31,19");
+        let (arrival, bus_lines) = parse_bus_notes(&text);
+        assert_eq!(arrival, 939);
+        assert_eq!(part2(bus_lines), 1068788);
+
+        /*
+                let text = String::from("939\n17,x,13,19");
+                let (arrival, bus_lines) = parse_bus_notes(&text);
+                assert_eq!(arrival, 939);
+                assert_eq!(part2(bus_lines), 3417);
+
+                let text = String::from("939\n67,7,59,61");
+                let (arrival, bus_lines) = parse_bus_notes(&text);
+                assert_eq!(arrival, 939);
+                assert_eq!(part2(bus_lines), 754018);
+
+                let text = String::from("939\n67,x,7,59,61");
+                let (arrival, bus_lines) = parse_bus_notes(&text);
+                assert_eq!(arrival, 939);
+                assert_eq!(part2(bus_lines), 779210);
+
+                let text = String::from("939\n67,7,x,59,61");
+                let (arrival, bus_lines) = parse_bus_notes(&text);
+                assert_eq!(arrival, 939);
+                assert_eq!(part2(bus_lines), 1261476);
+
+                let text = String::from("939\n1789,37,47,1889");
+                let (arrival, bus_lines) = parse_bus_notes(&text);
+                assert_eq!(arrival, 939);
+                assert_eq!(part2(bus_lines), 1202161486);
+
+                assert_eq!(true, false);
+        */
     }
 }
