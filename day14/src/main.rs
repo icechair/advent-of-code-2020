@@ -50,7 +50,7 @@ impl Program {
         match line {
             s if s.starts_with("mask") => self.bitmask = parse_bitmask(&line[7..]),
             s if s.starts_with("mem") => {
-                let (address, mut value) = parse_mem(line);
+                let (address, value) = parse_mem(line);
                 let (set_mask, unset_mask, _) = self.bitmask;
                 self.memory.insert(address, value | set_mask & unset_mask);
             }
