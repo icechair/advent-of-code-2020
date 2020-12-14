@@ -64,14 +64,19 @@ impl Program {
                 let (float_base, mut whitelist, float_bits) = parse_bitmask(&line[7..]);
                 whitelist = !whitelist;
                 let n_bits = float_bits.len();
-                let float_addrs = (0..2usize.pow(n_bits as u32))
-                    .map(|perm| {
-                        (0..n_bits).fold(float_base, |addr, x| match x {
-                            x if perm & 1 << x != 0 => addr | 1 << float_bits[x],
-                            _ => addr,
-                        })
-                    })
-                    .collect();
+                let mut float_addrs = vec![];
+                for perm in 0..2u64.pow(n_bits as u32) {
+                    let mut addr = float_base;
+                    for b in 0..n_bits {
+                        match b {
+                            b if perm & 1 << b != 0 => {
+                                addr = addr | 1 << float_bits[b];
+                            }
+                            _ => (),
+                        }
+                    }
+                    float_addrs.push(addr);
+                }
                 self.bitmask = (float_base, whitelist, float_addrs);
             }
             s if s.starts_with("mem") => {
@@ -119,12 +124,12 @@ mod tests {
     #[test]
     fn test_parse_bitmask() {
         let bitmask = parse_bitmask("XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X");
-        assert_eq!(bitmask.0, (1 << 6));
-        assert_eq!(bitmask.1, (!(1 << 1)));
-        assert_eq!(bitmask.2.len(), 36 - 2);
+        assert_eq!(bitmask.0, 0b1000000);
+        assert_eq!(bitmask.1, !0b10);
+        assert_eq!(bitmask.2.len(), 34);
 
         let bitmask = parse_bitmask("1001XX0X");
-        assert_eq!(bitmask.0, (1 << 7) | (1 << 4));
+        assert_eq!(bitmask.0, 0b10010000);
         assert_eq!(bitmask.1, !0b1100010);
         assert_eq!(bitmask.2.len(), 3);
     }
@@ -140,6 +145,8 @@ mod tests {
         let mut program = Program::new();
 
         program.tick_v1("mask = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X");
+        assert_eq!(program.bitmask.0, 0b1000000);
+        assert_eq!(program.bitmask.1, !0b10);
         program.tick_v1("mem[8] = 11");
         program.tick_v1("mem[7] = 101");
         program.tick_v1("mem[8] = 0");
@@ -150,10 +157,23 @@ mod tests {
         let mut program = Program::new();
 
         program.tick_v2("mask = 000000000000000000000000000000X1001X");
-        println!("{:?}", program.bitmask);
+        assert_eq!(program.bitmask.0, 0b10010);
+        assert_eq!(program.bitmask.1, 0b111111111111111111111111111111001100);
+        assert_eq!(
+            program.bitmask.2,
+            vec![0b010010, 0b010011, 0b110010, 0b110011]
+        );
+
         program.tick_v2("mem[42] = 100");
-        println!("{:?}", program.memory);
         program.tick_v2("mask = 00000000000000000000000000000000X0XX");
+
+        assert_eq!(program.bitmask.0, 0);
+        assert_eq!(program.bitmask.1, 0b111111111111111111111111111111110100);
+        assert_eq!(
+            program.bitmask.2,
+            vec![0b0000, 0b0001, 0b0010, 0b0011, 0b1000, 0b1001, 0b1010, 0b1011,]
+        );
+
         println!("{:?}", program.bitmask);
         program.tick_v2("mem[26] = 1");
         println!("{:?}", program.memory);
