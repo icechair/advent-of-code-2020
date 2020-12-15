@@ -3,10 +3,10 @@ use std::env;
 use std::fs;
 use std::io;
 
-fn part1(input: &str) -> usize {
+fn part1(input: &str, max: usize) -> usize {
     //n, (last_spoken, before_spoken)
     let mut memory = HashMap::<usize, Vec<usize>>::new();
-    let mut input = input
+    let input = input
         .split(",")
         .map(|x| {
             x.trim()
@@ -25,7 +25,7 @@ fn part1(input: &str) -> usize {
         turn += 1;
     }
 
-    while turn <= 2020 {
+    while turn <= max {
         if let Some(spoken) = memory.get(&n) {
             if spoken.len() > 1 {
                 n = turn - 1 - spoken[spoken.len() - 2];
@@ -51,7 +51,11 @@ fn part1(input: &str) -> usize {
 fn main() -> Result<(), io::Error> {
     let args: Vec<String> = env::args().collect();
     let input = fs::read_to_string(&args[1]).expect("read_to_string failed");
-    let n = part1(&input);
+    let mut max = 2020;
+    if &args[2] == "2" {
+        max = 30000000;
+    }
+    let n = part1(&input, max);
     println!("{}", n);
     Ok(())
 }
@@ -62,13 +66,13 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        assert_eq!(part1("0,3,6"), 436);
+        assert_eq!(part1("0,3,6", 2020), 436);
 
-        assert_eq!(part1("1,3,2"), 1);
-        assert_eq!(part1("2,1,3"), 10);
-        assert_eq!(part1("1,2,3"), 27);
-        assert_eq!(part1("2,3,1"), 78);
-        assert_eq!(part1("3,2,1"), 438);
-        assert_eq!(part1("3,1,2"), 1836);
+        assert_eq!(part1("1,3,2", 2020), 1);
+        assert_eq!(part1("2,1,3", 2020), 10);
+        assert_eq!(part1("1,2,3", 2020), 27);
+        assert_eq!(part1("2,3,1", 2020), 78);
+        assert_eq!(part1("3,2,1", 2020), 438);
+        assert_eq!(part1("3,1,2", 2020), 1836);
     }
 }
