@@ -41,18 +41,24 @@ fn lex(line: &str) -> Result<Vec<LexItem>, String> {
     return Ok(result);
 }
 
-fn rpn(tokens: Vec<LexItem>) -> Vec<LexItem> {
+fn rpn(tokens: Vec<LexItem>, add_before_mul: bool) -> Vec<LexItem> {
     let mut output = vec![];
     let mut operators = vec![];
     for token in tokens {
+        #[cfg(test)]
+        println!("token: {:?}", token);
         match token {
             LexItem::Num(_) => output.push(token),
-            LexItem::Op(_) => {
+            LexItem::Op(op) => {
                 loop {
                     if let Some(LexItem::LParen) = operators.last() {
                         break;
                     } else if let None = operators.last() {
                         break;
+                    } else if let Some(LexItem::Op(c)) = operators.last() {
+                        if add_before_mul && c == &'*' && op == '+' {
+                            break;
+                        }
                     }
                     output.push(operators.pop().unwrap());
                 }
@@ -73,6 +79,10 @@ fn rpn(tokens: Vec<LexItem>) -> Vec<LexItem> {
                 }
             }
         }
+        #[cfg(test)]
+        println!("\toutput:{:?}", output);
+        #[cfg(test)]
+        println!("\toperarots:{:?}", operators);
     }
 
     while let Some(_) = operators.last() {
@@ -107,7 +117,16 @@ fn solve_rpn(tokens: Vec<LexItem>) -> i64 {
 
 fn part1(line: &str) -> i64 {
     let tokens = lex(line).unwrap();
-    let prep = rpn(tokens);
+    let prep = rpn(tokens, false);
+    return solve_rpn(prep);
+}
+fn part2(line: &str) -> i64 {
+    let tokens = lex(line).unwrap();
+    #[cfg(test)]
+    println!("tokens: {:?}", tokens);
+    let prep = rpn(tokens, true);
+    #[cfg(test)]
+    println!("rpn: {:?}", prep);
     return solve_rpn(prep);
 }
 
@@ -115,8 +134,14 @@ fn main() -> Result<(), io::Error> {
     let args: Vec<String> = env::args().collect();
     let text = std::fs::read_to_string(&args[1]).expect("read_to_string failed");
     let mut sum = 0;
-    for line in text.lines() {
-        sum += part1(line);
+    if &args[2] == "1" {
+        for line in text.lines() {
+            sum += part1(line);
+        }
+    } else if &args[2] == "2" {
+        for line in text.lines() {
+            sum += part2(line);
+        }
     }
     println!("{}", sum);
     Ok(())
@@ -136,5 +161,10 @@ mod tests {
             part1("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2"),
             13632
         );
+    }
+
+    #[test]
+    fn text_part2() {
+        assert_eq!(part2("1 + 2 * 3 + 4 * 5 + 6"), 231);
     }
 }
